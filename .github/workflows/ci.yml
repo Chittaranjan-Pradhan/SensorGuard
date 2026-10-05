@@ -1,0 +1,28 @@
+name: CI
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install tools
+        run: sudo apt-get update && sudo apt-get install -y cmake g++ make
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build -j
+      - name: Unit, integration and E2E tests
+        run: cd build && ctest --output-on-failure
+
+  kernel-module-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install kernel headers
+        run: sudo apt-get update && sudo apt-get install -y build-essential linux-headers-$(uname -r)
+      - name: Build vsensor.ko
+        run: make -C driver

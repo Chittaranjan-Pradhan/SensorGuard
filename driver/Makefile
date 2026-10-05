@@ -1,0 +1,9 @@
+# Out-of-tree kernel module build:  make  |  make clean
+obj-m += vsensor.o
+KDIR ?= /lib/modules/$(shell uname -r)/build
+
+all:
+	$(MAKE) -C $(KDIR) M=$(PWD) modules
+
+clean:
+	$(MAKE) -C $(KDIR) M=$(PWD) clean

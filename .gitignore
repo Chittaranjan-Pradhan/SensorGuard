@@ -1,0 +1,13 @@
+build/
+*.o
+*.ko
+*.mod
+*.mod.c
+*.cmd
+.tmp_versions/
+modules.order
+Module.symvers
+*.csv
+*.log
+.vscode/
+.idea/
