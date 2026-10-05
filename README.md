@@ -1,72 +1,106 @@
-# SensorGuard – Smart Sensor Fault Detection
+# SensorGuard – Smart Sensor Fault Detection System
 
-[![CI](https://github.com/<YOUR_USER>/sensorguard/actions/workflows/ci.yml/badge.svg)](https://github.com/<YOUR_USER>/sensorguard/actions)
+## Project Overview
 
-A Linux project combining a **kernel device driver**, **system programming**, and **modern C++** to detect
-faults (stuck, spike, drift, noise, dropout, out-of-range) in a sensor data stream in real time.
+SensorGuard is a Linux-based smart sensor monitoring system developed using C++ and a Linux virtual sensor driver.
 
-```
- /dev/vsensor  ──read()──►  producer ─► BoundedQueue ─► consumer ─► Monitor(detectors + state machine)
- (vsensor.ko)   ◄─ioctl─     (timerfd+poll)                          └─► log + CSV      INIT→NORMAL→SUSPECT→FAULT→RECOVERING
-```
+The project simulates a temperature sensor and monitors sensor readings to identify abnormal or faulty behavior. When a fault is detected, the system classifies the fault, updates the sensor health state, and records the event for further analysis.
 
-## Quick start (no kernel module needed)
+The project demonstrates how C++, Linux system programming, device drivers, and embedded-system concepts can work together in a sensor monitoring application.
 
-```bash
-sudo apt install -y build-essential cmake
-make test                     # build + 43 unit/integration tests + E2E scenarios
-./build/sensorguardd --simulate --period-ms 100 --samples 200 --inject spike:60:120
-```
+---
 
-## With the real kernel driver (use a VM)
+## Problem Statement
 
-```bash
-sudo apt install -y linux-headers-$(uname -r)
-./scripts/load_driver.sh                  # builds + insmod, creates /dev/vsensor
-./build/sgctl /dev/vsensor read 3         # raw samples
-./build/sensorguardd -d /dev/vsensor &    # start monitoring
-./build/sgctl /dev/vsensor set drift      # inject a fault -> watch the log
-kill -USR1 %1                             # print statistics
-./scripts/test_driver.sh                  # driver system tests
-./scripts/unload_driver.sh
-```
+Sensors used in embedded and industrial systems may produce incorrect or abnormal readings because of communication failures, sudden spikes, stuck values, drift, or excessive noise.
 
-## Daemon options
+If these abnormal readings are not detected, they can lead to incorrect decisions or system failures.
 
-| Option | Meaning |
-|---|---|
-| `-s, --simulate` | use built-in simulator instead of the driver |
-| `-d, --device PATH` | device node (default `/dev/vsensor`) |
-| `-p, --period-ms N` | sampling period (default 100) |
-| `-n, --samples N` | stop after N samples |
-| `-i, --inject MODE:START[:END]` | `stuck|spike|drift|noise|dropout`, e.g. `drift:60` or `spike:50:120` |
-| `-c, --csv FILE` / `-l, --log FILE` | per-sample CSV / log file |
-| `-q, --quiet` | less verbose |
+SensorGuard addresses this problem by continuously monitoring sensor data and detecting different types of sensor faults.
 
-Signals: `SIGINT/SIGTERM` graceful stop · `SIGUSR1` statistics. Exit code `2` = sensor ended in FAULT.
+---
 
-## Repository layout
+## Objectives
 
-```
-driver/      vsensor.c, vsensor_ioctl.h (shared ABI), Makefile      ← Linux device driver
-include/     sensorguard/*.hpp                                       ← C++ interfaces
-src/         detectors, state machine, monitor, sources, daemon      ← C++ / system programming
-tests/       unit + integration tests                                ← 43 tests
-scripts/     load/unload driver, E2E + driver tests, demo
-docs/        stage1 … stage6 documents, PRD, UML (Mermaid), progress log
-.github/     CI workflow
-```
+The main objectives of SensorGuard are:
 
-## Course mapping (Capstone, 6 hours → 6 stages)
+- Simulate a temperature sensor in a Linux environment.
+- Provide sensor data through a virtual Linux device.
+- Monitor sensor readings using a C++ application.
+- Detect different types of sensor faults.
+- Classify detected faults.
+- Maintain the health state of the sensor.
+- Record detected events for analysis.
+- Demonstrate interaction between user-space software and a Linux device driver.
 
-| Hour | Stage | Document |
-|---|---|---|
-| 1 | Introduction + requirements | [`stage1`](docs/stage1_introduction.md), [`stage2`](docs/stage2_requirements_plan.md) |
-| 2–3 | System design & architecture, UML | [`stage3`](docs/stage3_design_architecture.md) |
-| 4–5 | Implementation planning, environment, prototype | [`stage4`](docs/stage4_prototype.md) |
-| 6 | Progress review, testing, next steps | [`stage5`](docs/stage5_testing_improvement.md), [`stage6`](docs/stage6_final_report.md) |
+---
 
-Progress log: [`docs/PROGRESS.md`](docs/PROGRESS.md)
+## How SensorGuard Works
 
-## License
-Driver: GPL-2.0 · everything else: MIT (see `LICENSE`).
+The system follows the general workflow:
+
+**Sensor → Data Source → Monitoring → Fault Detection → Health State → Logging → Analysis**
+
+The virtual sensor generates temperature readings.
+
+The C++ monitoring application reads these values and passes them through different fault detectors.
+
+The detectors check the readings for abnormal conditions such as:
+
+- Dropout
+- Out-of-range values
+- Stuck-at values
+- Sudden spikes
+- Drift
+- Excessive noise
+
+When a fault is detected, the sensor state is updated and the event is recorded for further analysis.
+
+---
+
+## System Architecture
+
+```text
+                ┌──────────────────────┐
+                │   Virtual Sensor     │
+                │   Linux Driver       │
+                └──────────┬───────────┘
+                           │
+                           ▼
+                ┌──────────────────────┐
+                │   Sensor Data Source │
+                └──────────┬───────────┘
+                           │
+                           ▼
+                ┌──────────────────────┐
+                │   Sensor Monitor     │
+                │       (C++)          │
+                └──────────┬───────────┘
+                           │
+                           ▼
+                ┌──────────────────────┐
+                │   Fault Detectors    │
+                ├──────────────────────┤
+                │ Dropout              │
+                │ Range                │
+                │ Stuck                │
+                │ Spike                │
+                │ Drift                │
+                │ Noise                │
+                └──────────┬───────────┘
+                           │
+                           ▼
+                ┌──────────────────────┐
+                │   Sensor State       │
+                │   State Machine      │
+                └──────────┬───────────┘
+                           │
+                           ▼
+                ┌──────────────────────┐
+                │    Event Logger      │
+                └──────────┬───────────┘
+                           │
+                           ▼
+                ┌──────────────────────┐
+                │   Fault Analysis     │
+                └──────────────────────┘
