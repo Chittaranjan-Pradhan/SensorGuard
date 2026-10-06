@@ -1,17 +1,19 @@
-SensorGuard
+# SensorGuard
 
-Smart Sensor Fault Detection & Event Analysis System
+## Smart Sensor Fault Detection & Event Analysis System
 
-SensorGuard is a Linux-based smart sensor monitoring and
+**SensorGuard** is a Linux-based smart sensor monitoring and
 fault-detection system developed mainly in C++. It uses a virtual
 temperature sensor to generate controlled readings, detects abnormal
 sensor behavior, tracks sensor health through a state machine, and
 records events for later analysis.
 
-Core workflow: Read → Monitor → Detect → Classify → Track Health →
-Recover → Log → Analyze
+> **Core workflow:** Read → Monitor → Detect → Classify → Track Health →
+> Recover → Log → Analyze
 
-1. Project Overview
+------------------------------------------------------------------------
+
+## 1. Project Overview
 
 In embedded, industrial, environmental, and IoT systems, sensor readings
 can become unreliable. A sensor may stop responding, produce an
@@ -22,10 +24,12 @@ SensorGuard demonstrates how a monitoring system can continuously
 observe sensor data, detect abnormal behavior, track sensor health,
 record events, and verify recovery.
 
-The current implementation uses a simulated temperature sensor, so
+The current implementation uses a **simulated temperature sensor**, so
 the project can be tested without physical hardware.
 
-2. Problem Statement
+------------------------------------------------------------------------
+
+## 2. Problem Statement
 
 A system should not blindly trust sensor readings. Faulty readings can
 cause incorrect decisions in a larger embedded or industrial system.
@@ -33,46 +37,37 @@ cause incorrect decisions in a larger embedded or industrial system.
 SensorGuard addresses this problem by monitoring sensor data and
 identifying abnormal behavior such as:
 
-Dropout
-
-Out-of-range values
-
-Stuck-at values
-
-Spikes
-
-Drift
-
-Noise
+-   Dropout
+-   Out-of-range values
+-   Stuck-at values
+-   Spikes
+-   Drift
+-   Noise
 
 The system also maintains a health state, records important events, and
 produces data that can be analyzed later.
 
-3. Objectives
+------------------------------------------------------------------------
 
-Build a Linux-based sensor monitoring system.
+## 3. Objectives
 
-Generate controlled temperature sensor data without physical
-hardware.
+-   Build a Linux-based sensor monitoring system.
+-   Generate controlled temperature sensor data without physical
+    hardware.
+-   Detect multiple types of sensor faults.
+-   Track sensor health using a state machine.
+-   Use modular C++ fault detectors.
+-   Record fault and state-transition events.
+-   Generate per-sample data for analysis.
+-   Demonstrate Linux user-space and device-driver concepts.
+-   Provide automated unit, integration, and end-to-end testing.
+-   Use Git, GitHub, and CI for development and verification.
 
-Detect multiple types of sensor faults.
+------------------------------------------------------------------------
 
-Track sensor health using a state machine.
+## 4. System Architecture
 
-Use modular C++ fault detectors.
-
-Record fault and state-transition events.
-
-Generate per-sample data for analysis.
-
-Demonstrate Linux user-space and device-driver concepts.
-
-Provide automated unit, integration, and end-to-end testing.
-
-Use Git, GitHub, and CI for development and verification.
-
-4. System Architecture
-
+``` text
 Virtual Temperature Sensor
             │
             ▼
@@ -102,125 +97,157 @@ Spike     Drift       Noise
                          /                                ▼          ▼
                    Event Log   Fault Analysis
                    demo.log     demo.csv
+```
 
-5. Main Components
+------------------------------------------------------------------------
 
-Virtual Sensor
+## 5. Main Components
+
+### Virtual Sensor
 
 Generates temperature readings and controlled fault conditions. This
 allows repeatable testing without physical hardware.
 
-Linux Virtual Sensor Driver
+### Linux Virtual Sensor Driver
 
 The project contains:
 
+``` text
 driver/vsensor.c
+```
 
 The driver demonstrates a Linux device interface and exposes the virtual
 sensor as:
 
+``` text
 /dev/vsensor
+```
 
 The application can also run in simulation mode.
 
-C++ Monitoring Application
+### C++ Monitoring Application
 
 The C++ application reads sensor data, invokes fault detectors, manages
 health states, and records events.
 
-Fault Detectors
+### Fault Detectors
 
 Separate detector modules identify different abnormal behaviors. This
 keeps the detection logic modular and easier to test.
 
-Health State Machine
+### Health State Machine
 
 The sensor health is represented by:
 
+``` text
 INIT → NORMAL → SUSPECT → FAULT → RECOVERING → NORMAL
+```
 
-6. Sensor Fault Types
+------------------------------------------------------------------------
 
-6.1 Dropout
+## 6. Sensor Fault Types
+
+### 6.1 Dropout
 
 The sensor stops providing a valid reading.
 
+``` text
 25.1
 25.0
 25.2
 ----
 ----
 ----
+```
 
-6.2 Out-of-Range
+### 6.2 Out-of-Range
 
 The sensor produces a value outside the defined acceptable range.
 
+``` text
 25°C
 26°C
 25°C
 150°C  ← abnormal
+```
 
-6.3 Stuck-at
+### 6.3 Stuck-at
 
 The sensor repeatedly reports the same value.
 
+``` text
 25.1
 25.1
 25.1
 25.1
 25.1
+```
 
-6.4 Spike
+### 6.4 Spike
 
 The sensor suddenly changes to an abnormal value.
 
+``` text
 25°C
 25°C
 25°C
 50°C  ← sudden spike
 50°C
 25°C
+```
 
-6.5 Drift
+### 6.5 Drift
 
 The sensor gradually moves away from expected behavior.
 
+``` text
 25°C
 26°C
 27°C
 28°C
 29°C
 30°C
+```
 
-6.6 Noise
+### 6.6 Noise
 
 The sensor produces excessive irregular variation.
 
+``` text
 25.1
 28.7
 23.4
 29.2
 24.0
 27.8
+```
 
-7. Health State Machine
+------------------------------------------------------------------------
 
-State                               Meaning
+## 7. Health State Machine
 
-INIT                              System has started and is
-establishing the initial condition.
+  -----------------------------------------------------------------------
+  State                               Meaning
+  ----------------------------------- -----------------------------------
+  `INIT`                              System has started and is
+                                      establishing the initial condition.
 
-NORMAL                            Sensor readings are behaving
-normally.
+  `NORMAL`                            Sensor readings are behaving
+                                      normally.
 
-SUSPECT                           Abnormal behavior has been observed
-and needs confirmation.
+  `SUSPECT`                           Abnormal behavior has been observed
+                                      and needs confirmation.
 
-FAULT                             A sensor fault has been confirmed.
+  `FAULT`                             A sensor fault has been confirmed.
 
-Example
+  `RECOVERING`                        The fault has cleared and the
+                                      system is verifying normal
+                                      behavior.
+  -----------------------------------------------------------------------
 
+### Example
+
+``` text
 INIT
   ↓
 NORMAL
@@ -232,57 +259,53 @@ FAULT
 RECOVERING
   ↓
 NORMAL
+```
 
 This means:
 
-Healthy → abnormal behavior → confirmed fault → recovery verification
-→ healthy
+**Healthy → abnormal behavior → confirmed fault → recovery verification
+→ healthy**
 
-8. Event Logging
+------------------------------------------------------------------------
+
+## 8. Event Logging
 
 SensorGuard records important events during execution.
 
-demo.log
+### `demo.log`
 
 Contains events such as:
 
-Fault detection
+-   Fault detection
+-   Fault injection
+-   Fault clearing
+-   Health-state transitions
+-   Recovery
+-   Final statistics
 
-Fault injection
-
-Fault clearing
-
-Health-state transitions
-
-Recovery
-
-Final statistics
-
-demo.csv
+### `demo.csv`
 
 Contains per-sample sensor data for later analysis.
 
-This allows the system to preserve both important events and
-raw/per-sample information.
+This allows the system to preserve both **important events** and
+**raw/per-sample information**.
 
-9. Fault Analysis
+------------------------------------------------------------------------
+
+## 9. Fault Analysis
 
 The recorded data can be used to determine:
 
-Which fault occurred
+-   Which fault occurred
+-   When it occurred
+-   What sensor values were produced
+-   How the health state changed
+-   When the fault was cleared
+-   Whether the system returned to normal
 
-When it occurred
+### Demonstrated spike scenario
 
-What sensor values were produced
-
-How the health state changed
-
-When the fault was cleared
-
-Whether the system returned to normal
-
-Demonstrated spike scenario
-
+``` text
 Normal sensor readings
         ↓
 Spike injected
@@ -298,36 +321,48 @@ Spike cleared
 FAULT → RECOVERING
         ↓
 RECOVERING → NORMAL
+```
 
-10. Demonstration Result
+------------------------------------------------------------------------
+
+## 10. Demonstration Result
 
 A successful spike demonstration produced:
 
+``` text
 Samples processed : 200
 State transitions : 5
 Spike detections  : 16
 Final state       : NORMAL
+```
 
 The five transitions were:
 
+``` text
 INIT → NORMAL
 NORMAL → SUSPECT
 SUSPECT → FAULT
 FAULT → RECOVERING
 RECOVERING → NORMAL
+```
 
 The demonstration also produced:
 
+``` text
 demo.log
 demo.csv
+```
 
-Occasional sampling overrun / ticks missed warnings may appear
-when running inside VirtualBox. These are timing/scheduling warnings
-from the virtualized environment and are separate from the
-sensor-fault detection logic.
+> Occasional `sampling overrun` / `ticks missed` warnings may appear
+> when running inside VirtualBox. These are timing/scheduling warnings
+> from the virtualized environment and are separate from the
+> sensor-fault detection logic.
 
-11. Project Structure
+------------------------------------------------------------------------
 
+## 11. Project Structure
+
+``` text
 SensorGuard/
 ├── .github/
 │   └── workflows/
@@ -357,76 +392,83 @@ SensorGuard/
 ├── Makefile
 ├── README.md
 └── LICENSE
+```
 
-12. Technologies Used
+------------------------------------------------------------------------
 
-Technology                 Purpose
+## 12. Technologies Used
 
-C++                    Monitoring, fault detection, state management
-C                      Linux virtual device driver
-Linux                  System-programming environment
-Linux Kernel Modules   Virtual sensor/device interface
-CMake                  Build configuration
-Make                   Build automation
-Bash                   Demo and testing scripts
-Git                    Version control
-GitHub                 Repository and CI
-VirtualBox             Ubuntu virtual-machine environment
+  Technology                 Purpose
+  -------------------------- -----------------------------------------------
+  **C++**                    Monitoring, fault detection, state management
+  **C**                      Linux virtual device driver
+  **Linux**                  System-programming environment
+  **Linux Kernel Modules**   Virtual sensor/device interface
+  **CMake**                  Build configuration
+  **Make**                   Build automation
+  **Bash**                   Demo and testing scripts
+  **Git**                    Version control
+  **GitHub**                 Repository and CI
+  **VirtualBox**             Ubuntu virtual-machine environment
 
-13. Build and Run
+------------------------------------------------------------------------
 
-Prerequisites
+## 13. Build and Run
+
+### Prerequisites
 
 Linux environment with:
 
-g++
+-   `g++`
+-   `cmake`
+-   `make`
+-   `git`
 
-cmake
-
-make
-
-git
-
-Build
+### Build
 
 From the project root:
 
+``` bash
 make
+```
 
-Run the demonstration
+### Run the demonstration
 
+``` bash
 chmod +x scripts/run_demo.sh
 ./scripts/run_demo.sh
+```
 
-Run end-to-end tests
+### Run end-to-end tests
 
+``` bash
 chmod +x scripts/e2e_sim.sh
 ./scripts/e2e_sim.sh
+```
 
 Expected result:
 
+``` text
 E2E: ALL PASSED
+```
 
-14. Testing and CI
+------------------------------------------------------------------------
+
+## 14. Testing and CI
 
 The project includes automated testing for:
 
-Unit behavior
-
-Integration behavior
-
-End-to-end simulation
-
-Fault injection
-
-Recovery behavior
-
-Graceful shutdown
-
-Invalid input handling
+-   Unit behavior
+-   Integration behavior
+-   End-to-end simulation
+-   Fault injection
+-   Recovery behavior
+-   Graceful shutdown
+-   Invalid input handling
 
 GitHub Actions performs the automated pipeline:
 
+``` text
 Configure
    ↓
 Build
@@ -436,139 +478,111 @@ Kernel Module Build
 Unit / Integration Tests
    ↓
 E2E Tests
+```
 
 The latest CI run successfully passes these stages.
 
-15. Linux and Embedded Concepts Demonstrated
+------------------------------------------------------------------------
 
-Linux
+## 15. Linux and Embedded Concepts Demonstrated
 
-Command line
+### Linux
 
-Processes
+-   Command line
+-   Processes
+-   File permissions
+-   User-space and kernel-space concepts
+-   System-level monitoring
 
-File permissions
+### C++
 
-User-space and kernel-space concepts
+-   Object-oriented design
+-   Modular classes
+-   Data processing
+-   State management
+-   File handling
+-   Error handling
 
-System-level monitoring
+### Device Drivers
 
-C++
+-   Linux kernel module
+-   Virtual device
+-   Device interface
+-   User-space/device interaction
 
-Object-oriented design
+### System Programming
 
-Modular classes
+-   Process execution
+-   Signals
+-   Periodic monitoring
+-   File operations
+-   System-level interaction
 
-Data processing
+### Software Engineering
 
-State management
+-   Modular architecture
+-   Automated testing
+-   CMake and Make
+-   Git version control
+-   GitHub Actions
+-   Documentation
 
-File handling
+------------------------------------------------------------------------
 
-Error handling
+## 16. Limitations
 
-Device Drivers
+1.  The current sensor is simulated rather than connected to physical
+    hardware.
+2.  Fault-detection rules are predefined.
+3.  The project does not currently use machine learning for anomaly
+    detection.
+4.  The demonstration focuses on a virtual sensor.
+5.  Timing behavior can be affected by the VirtualBox environment.
 
-Linux kernel module
+------------------------------------------------------------------------
 
-Virtual device
+## 17. Future Enhancements
 
-Device interface
+-   Connect a real temperature sensor.
+-   Add I2C/SPI sensor interfaces.
+-   Support multiple sensors.
+-   Add a graphical monitoring dashboard.
+-   Store historical fault statistics.
+-   Make detection thresholds configurable.
+-   Improve timing and scheduling.
+-   Add adaptive or machine-learning-based anomaly detection.
+-   Add alerts for critical faults.
+-   Integrate additional embedded hardware.
 
-User-space/device interaction
+------------------------------------------------------------------------
 
-System Programming
-
-Process execution
-
-Signals
-
-Periodic monitoring
-
-File operations
-
-System-level interaction
-
-Software Engineering
-
-Modular architecture
-
-Automated testing
-
-CMake and Make
-
-Git version control
-
-GitHub Actions
-
-Documentation
-
-16. Limitations
-
-The current sensor is simulated rather than connected to physical
-hardware.
-
-Fault-detection rules are predefined.
-
-The project does not currently use machine learning for anomaly
-detection.
-
-The demonstration focuses on a virtual sensor.
-
-Timing behavior can be affected by the VirtualBox environment.
-
-17. Future Enhancements
-
-Connect a real temperature sensor.
-
-Add I2C/SPI sensor interfaces.
-
-Support multiple sensors.
-
-Add a graphical monitoring dashboard.
-
-Store historical fault statistics.
-
-Make detection thresholds configurable.
-
-Improve timing and scheduling.
-
-Add adaptive or machine-learning-based anomaly detection.
-
-Add alerts for critical faults.
-
-Integrate additional embedded hardware.
-
-18. Possible Applications
+## 18. Possible Applications
 
 SensorGuard's approach can be adapted for:
 
-Industrial equipment monitoring
+-   Industrial equipment monitoring
+-   IoT systems
+-   Environmental monitoring
+-   Temperature monitoring
+-   Embedded diagnostics
+-   Predictive maintenance
+-   Machine health monitoring
+-   Automation systems
 
-IoT systems
+------------------------------------------------------------------------
 
-Environmental monitoring
+## 19. Key Project Idea
 
-Temperature monitoring
-
-Embedded diagnostics
-
-Predictive maintenance
-
-Machine health monitoring
-
-Automation systems
-
-19. Key Project Idea
-
-SensorGuard does not blindly trust sensor data. It continuously
-monitors the data, detects abnormal behavior, determines sensor
-health, records important events, and verifies recovery.
+> **SensorGuard does not blindly trust sensor data. It continuously
+> monitors the data, detects abnormal behavior, determines sensor
+> health, records important events, and verifies recovery.**
 
 The project combines this idea with Linux, C++, device-driver concepts,
 system programming, automated testing, and Git-based development.
 
-20. Conclusion
+------------------------------------------------------------------------
+
+## 20. Conclusion
 
 SensorGuard demonstrates a complete sensor-monitoring workflow using a
 controlled Linux environment.
@@ -579,14 +593,16 @@ sensor returns to a normal state after a demonstrated fault condition.
 
 The project brings together:
 
-Sensor Simulation + C++ + Linux + Device Drivers + Fault Detection +
-State Machine + Event Logging + Testing + GitHub CI
+**Sensor Simulation + C++ + Linux + Device Drivers + Fault Detection +
+State Machine + Event Logging + Testing + GitHub CI**
 
-Author
+------------------------------------------------------------------------
 
-Chittaranjan Pradhan
+## Author
 
-Project: SensorGuard -- Smart Sensor Fault Detection & Event
+**Chittaranjan Pradhan**
+
+**Project:** SensorGuard -- Smart Sensor Fault Detection & Event
 Analysis System
 
-Repository: Chittaranjan-Pradhan/SensorGuard
+**Repository:** `Chittaranjan-Pradhan/SensorGuard`
